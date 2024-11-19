@@ -1,0 +1,9 @@
+dist
+tests/data
+tests/disabled
+tests/fuzzer
+**/__pycache__/
+.DS_Store
+tmp
+*.pyc
+.coverage
