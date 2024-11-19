@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "condabom"
+version = "0.1.0"
+description = ""
+authors = ["Michael Beale <michael.beale@intel.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [
+    { include = "condabom", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32.3"
+pandas = "^2.2.3"
+PyYAML = "^6.0.2"
+tqdm = "^4.67.0"
+spdx-matcher = "^0.0.13"
+spdx-lookup = "^0.3.3"
+
+[tool.poetry.scripts]
+condabom = "condabom.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
