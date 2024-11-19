@@ -75,7 +75,7 @@ def generatebom(args: argparse.ArgumentParser):
 def main(argv=None):
     # Create top-level parser
     parser = argparse.ArgumentParser(
-        description='Demo program showing argparse features'
+        description='Generate a Bill of Materials (BOM) for a Conda environment file or a requirements.txt file'
     )
 
     # File command
