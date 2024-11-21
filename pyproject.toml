@@ -17,6 +17,8 @@ PyYAML = "^6.0.2"
 tqdm = "^4.67.0"
 spdx-matcher = "^0.0.13"
 spdx-lookup = "^0.3.3"
+openpyxl = "^3.1.5"
+foss-flame = "^0.20.7"
 
 [tool.poetry.scripts]
 condabom = "condabom.main:main"
