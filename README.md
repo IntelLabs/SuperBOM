@@ -25,3 +25,40 @@ options:
   -p PLATFORM, --platform PLATFORM
                         Additional platform to check for conda packages
 ```
+## Setup and Build
+### Prerequisites
+- Python 3.12+  
+- poetry (Python package manager)  
+- git  
+
+### Project Setup
+```
+# Navigate to project directory
+cd condabom
+
+# Initialize poetry environment with Python 3.12+
+poetry env use python3.12
+
+# Install project dependencies
+poetry install
+```
+### Development Setup
+```
+# Activate the poetry shell
+poetry shell
+
+# Install dependencies
+poetry install
+```
+
+### Building
+
+```
+# Build the project
+poetry build
+
+# this will create two files in dist/:
+# - condabom-x.x.x-py3-none-any.whl (Wheel file)
+# - condabom-x.x.x.tar.gz (Source distribution)
+```
+
