@@ -2,6 +2,7 @@ import argparse
 import re
 import sys
 import yaml
+import os
 import pandas as pd
 import condabom.condadependencies as condadependencies
 import condabom.pipdependencies as pipdependencies
@@ -43,19 +44,25 @@ def generatebom(args: argparse.ArgumentParser):
 
     #     output_data = pip_deps.get_pip_packages_data(dep_info)
 
-    #Handle Conda Env File
-    if args.filename:
-        print (f"Processing conda env file: {args.filename}")
-        channels, conda_packages, pip_packages = parse_conda_env(args.filename)
-        packageutil = condadependencies.CondaPackageUtil()
-        if args.platform:
-            packageutil._cache.add_platform(args.platform)
+    if args.path:
+        if os.path.isdir(args.path):
+            env_files = [os.path.join(args.path, f) for f in os.listdir(args.path) if f.endswith('.yml')]
+        else:
+            env_files = [args.path]
 
-        if channels:
-            packageutil._cache.add_channels(channels)
+        for env_file in env_files:
+            print(f"Processing conda env file: {env_file}")
+            channels, conda_packages, pip_packages = parse_conda_env(env_file)
+            packageutil = condadependencies.CondaPackageUtil()
+            if args.platform:
+                packageutil._cache.add_platform(args.platform)
 
-        conda_data = packageutil.retrieve_conda_package_info(conda_packages)
-        conda_pip_data = pipdependencies.get_pip_packages_data(pip_packages)
+            if channels:
+                packageutil._cache.add_channels(channels)
+
+            conda_data = packageutil.retrieve_conda_package_info(conda_packages)
+            conda_pip_data = pipdependencies.get_pip_packages_data(pip_packages)
+            output_data.extend(conda_data + conda_pip_data)
         output_data = conda_data + conda_pip_data
 
     # else:
@@ -69,6 +76,8 @@ def generatebom(args: argparse.ArgumentParser):
         df.to_csv(args.output, index=False)
     elif args.format == 'json':
         df.to_json(args.output, orient='records')
+    elif args.format == 'excel':
+        df.to_excel(args.output, sheet_name='Conda Dependencies', index=False)
     else:
         print(df)
 
@@ -79,11 +88,11 @@ def main(argv=None):
     )
 
     # File command
-    parser.add_argument('filename', type=str, help="Path to environment.yml file")
+    parser.add_argument('path', type=str, help="Path to environment.yml file or directory containing environment files")
 
     # Output commands
     parser.add_argument('-o', '--output', type=str, help='Path to output file', default=sys.stdout)
-    parser.add_argument('-f', '--format', type=str, help='Output format (table, csv, json) Default: table', default='table')
+    parser.add_argument('-f', '--format', type=str, help='Output format (table, csv, excel, json) Default: table', default='table')
     
     # Platform command
     parser.add_argument('-p', '--platform', type=str, help='Additional platform to check for conda packages', default=None)

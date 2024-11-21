@@ -1,8 +1,7 @@
 
 import re
-from condabom import condacache
-from condabom import license_cleaner
-import json
+from condabom.utils import condacache, pypiutils
+from condabom.utils import licenseutils
 
 class CondaPackageUtil:
     def __init__(self):
@@ -74,6 +73,9 @@ class CondaPackageUtil:
                 for platform in self._cache.platforms:
                     channel = parsed['channel'] if parsed['channel'] else channel
                     info = self.lookup_package(channel, platform, parsed['package'], parsed['version'])
+                    if not info:
+                        info = self.lookup_package(channel, platform, parsed['package'])
+
                     package_info = info[1] if info else None
 
                     if package_info:
@@ -86,19 +88,30 @@ class CondaPackageUtil:
 
             if not package_info:
                 print(f"Failed to find package: {parsed['package']} in all channels")
-                continue
+                package_info = {}
 
             name = package_info.get('name', parsed['package'])
             version = package_info.get('version', parsed['version'])
-            license = license_cleaner.get_license_info(package_info)
+            # license = licenseutils.get_license_info(package_info)
+            if package_info.get('license'):
+                validated, license = licenseutils.checklicense(package_info.get('license'))
+
+                # if not validated, check PyPI to see if we can find the license
+                if not validated:
+                    validated, license = pypiutils.get_license(package_info)
+            else:
+                validated, license = False, 'No License Information'
 
             package_data.append({
                 'Package': name,
                 'Version': version,
                 'License': license,
-                'Source': parsed['channel']
+                'Validated': validated,
+                'Source': f"{channel}:{platform}"
             })
-            print (f"Package: {name}, Version: {version}, License: {license}, Source: {parsed['channel']}")
+
+            print (f"Package: {name}, Version: {version}, License: {license}, Source: {channel}:{platform}")
+
         return package_data
 
 def main():
