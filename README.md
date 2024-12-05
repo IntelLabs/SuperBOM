@@ -1,20 +1,19 @@
-# CondaBOM
+# SuperBOM
 
 ## Features
-- Automatically parses Conda environment.py file to discover
-  - channels
-  - packages
-  - pip packages
-- Looks up license information directly from Conda cache and PyPi.
+- Automatically parses python env files to discover dependencies.
+- Currently supports:
+  - Conda (environment.yml)
+  - PIP (requirements.txt)
+  - Poetry (pyproject.toml)
+- Looks up license information directly from Conda caches and PyPi.
 
 ## Usage
 ```
-usage: condabom [-h] [-o OUTPUT] [-f FORMAT] [-p PLATFORM] filename
-
-Generate a Bill of Materials (BOM) for a Conda environment file or a requirements.txt file
+usage: superbom [-h] [-o OUTPUT] [-f FORMAT] [-p PLATFORM] filename
 
 positional arguments:
-  filename              Path to environment.yml file
+  filename              Path to input file
 
 options:
   -h, --help            show this help message and exit
@@ -58,7 +57,7 @@ poetry install
 poetry build
 
 # this will create two files in dist/:
-# - condabom-x.x.x-py3-none-any.whl (Wheel file)
-# - condabom-x.x.x.tar.gz (Source distribution)
+# - superbom-x.x.x-py3-none-any.whl (Wheel file)
+# - superbom-x.x.x.tar.gz (Source distribution)
 ```
 

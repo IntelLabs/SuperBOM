@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "condabom"
+name = "superBOM"
 version = "0.1.0"
 description = ""
 authors = ["Michael Beale <michael.beale@intel.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 packages = [
-    { include = "condabom", from = "src" }
+    { include = "superbom", from = "src" }
 ]
 
 [tool.poetry.dependencies]
@@ -19,9 +19,10 @@ spdx-matcher = "^0.0.13"
 spdx-lookup = "^0.3.3"
 openpyxl = "^3.1.5"
 foss-flame = "^0.20.7"
+colorlog = "^6.9.0"
 
 [tool.poetry.scripts]
-condabom = "condabom.main:main"
+superbom = "superbom.main:main"
 
 [build-system]
 requires = ["poetry-core"]

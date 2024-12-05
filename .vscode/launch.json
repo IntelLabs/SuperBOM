@@ -16,7 +16,7 @@
             "name": "Python Debugger: Main with Arguments",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/condabom/main.py",
+            "program": "src/superbom/main.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "env": {
@@ -25,13 +25,16 @@
             "justMyCode": false,
             // "args": "${command:pickArgs}",
             "args": [
+                "tests/data/",
                 // "tests/data/conda_env.yaml",
                 // "tests/data/environment.yml",
-                "tests/data/",
+                // "tests/data/",
                 "--platform",
                 "linux-64",
-                "--output",
-                "output.yml"
+                // "--output",
+                // "results.xlsx",
+                "-f",
+                "excel"
             ],
         }
     ]
