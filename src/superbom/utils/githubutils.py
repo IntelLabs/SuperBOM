@@ -1,5 +1,5 @@
 import requests
-from condabom.utils.licenseutils import checklicense
+from superbom.utils.licenseutils import checklicense
 
 def get_license(source):
     if not "github.com" in source:

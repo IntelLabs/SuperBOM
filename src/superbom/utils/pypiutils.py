@@ -1,6 +1,6 @@
 import string
-import condabom.utils.githubutils as githubutils
-from condabom.utils.licenseutils import checklicense
+import superbom.utils.githubutils as githubutils
+from superbom.utils.licenseutils import checklicense
 
 license_attribute = {
     "license_expression",

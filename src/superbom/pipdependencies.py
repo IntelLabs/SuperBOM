@@ -1,7 +1,10 @@
 import re
 import requests
 
-import condabom.utils.pypiutils as pypiutils
+import superbom.utils.pypiutils as pypiutils
+from superbom.utils.logger import AppLogger
+logger = AppLogger().get_logger()
+
 
 def _getmetadata(package):
     package_data = None
@@ -76,7 +79,7 @@ def get_pip_packages_data(pip_deps) -> list:
             package = parts[0]
             release = parts[1] + parts[2] if len(parts) > 2 else None
         except Exception as e:
-            print(f"Failed to split package name and version: {e}")
+            logger.error(f"Failed to split package name and version: {e}")
             package, _ = package, None
 
         metadata = _getmetadata(package)
@@ -94,5 +97,5 @@ def get_pip_packages_data(pip_deps) -> list:
                 'Validated': validated,
                 'Source': source
             })
-            print (f"Package: {name}, Version: {version}, License: {license}, Source: {source}")
+            logger.info(f"Package: {name}, Version: {version}, License: {license}, Source: {source}")
     return package_data

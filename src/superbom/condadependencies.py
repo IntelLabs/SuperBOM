@@ -1,7 +1,9 @@
 
 import re
-from condabom.utils import condacache, pypiutils
-from condabom.utils import licenseutils
+from superbom.utils import condacache, pypiutils
+from superbom.utils import licenseutils
+from superbom.utils.logger import AppLogger
+logger = AppLogger().get_logger()
 
 class CondaPackageUtil:
     def __init__(self):
@@ -35,13 +37,11 @@ class CondaPackageUtil:
         return components
     
     def lookup_package(self, channel, platform, package, version=None):
-        package_info = {}
-
         data = self._cache.get_cache(channel, platform)
 
         if not data:
-            print(f"Failed to find cache for {channel}/{platform}")
-            return package_info
+            logger.error(f"Failed to find cache for {channel}/{platform}")
+            return None
 
         packages = {**data['packages'], **data['packages.conda']}
 
@@ -57,6 +57,12 @@ class CondaPackageUtil:
         except KeyError:
             pass
         return package_info
+
+    def _find_license(self, dictionary, license):
+        for key in dictionary.keys():
+            if license in key:
+                return key, dictionary[key]
+        return None, None
 
     def retrieve_conda_package_info(self, deps) -> list:
         package_data = []
@@ -76,25 +82,35 @@ class CondaPackageUtil:
                     if not info:
                         info = self.lookup_package(channel, platform, parsed['package'])
 
+                    if not info:
+                        info = self.lookup_package(channel, platform, f"{parsed['package']}_{platform}")
+
                     package_info = info[1] if info else None
 
                     if package_info:
                         # Found the package in the platform
-                        break
+                        _, license_info = self._find_license(package_info, 'license')
+
+                        if license_info:
+                            break
+                        else:
+                            continue
 
                 if package_info:
                     # Found the package in the channel
                     break    
 
             if not package_info:
-                print(f"Failed to find package: {parsed['package']} in all channels")
+                logger.debug(f"Failed to find package: {parsed['package']} in all channels")
                 package_info = {}
 
             name = package_info.get('name', parsed['package'])
             version = package_info.get('version', parsed['version'])
-            # license = licenseutils.get_license_info(package_info)
-            if package_info.get('license'):
-                validated, license = licenseutils.checklicense(package_info.get('license'))
+
+            _, license_info = self._find_license(package_info, 'license')
+
+            if license_info:
+                validated, license = licenseutils.checklicense(license_info)
 
                 # if not validated, check PyPI to see if we can find the license
                 if not validated:
@@ -110,7 +126,7 @@ class CondaPackageUtil:
                 'Source': f"{channel}:{platform}"
             })
 
-            print (f"Package: {name}, Version: {version}, License: {license}, Source: {channel}:{platform}")
+            logger.info(f"Package: {name}, Version: {version}, License: {license}, Source: {channel}:{platform}")
 
         return package_data
 
@@ -136,7 +152,6 @@ def main():
     package_util = CondaPackageUtil()
     package_util._cache.add_platform('linux-64')
     package_data = package_util.retrieve_conda_package_info(dependencies)
-    # print(json.dumps(package_data))
 
 if __name__ == "__main__":
     main()
