@@ -1,15 +1,15 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import string
+
 import superbom.utils.githubutils as githubutils
 from superbom.utils.licenseutils import checklicense
 
-license_attribute = {
-    "license_expression",
-    "license"
-}
+license_attribute = {"license_expression", "license"}
+
 
 def _get_license_from_metadata(metadata):
-    license = None
-    
     for attr in license_attribute:
         if metadata.get(attr):
             tmp = metadata.get(attr)
@@ -17,32 +17,37 @@ def _get_license_from_metadata(metadata):
 
     return None, False
 
+
 def _get_license_from_classifiers(metadata):
-    if metadata.get('classifiers'):
-        classifiers = metadata.get('classifiers')
+    if metadata.get("classifiers"):
+        classifiers = metadata.get("classifiers")
         for c in classifiers:
             if "License" in c:
                 tmp = c.split("::")[-1].strip()
                 return checklicense(tmp)
-    
+
     return None, False
+
 
 sourcename_map = {
     "repository",
     "sourcecode",
     "github",
-    "source"
+    "source",
+    "homepage",
 }
+
 
 def _normalize_label(label: str) -> str:
     chars_to_remove = string.punctuation + string.whitespace
     removal_map = str.maketrans("", "", chars_to_remove)
     return label.translate(removal_map).lower()
 
+
 def _get_license_from_source(metadata):
 
-    if metadata.get('project_urls'):
-        project_urls = metadata.get('project_urls')
+    if metadata.get("project_urls"):
+        project_urls = metadata.get("project_urls")
 
         # Normalize the keys and get the "source" URL from project_urls
         for key in project_urls.keys():
@@ -53,12 +58,13 @@ def _get_license_from_source(metadata):
 
     return None, False
 
+
 def get_license(metadata):
 
     license_checks = [
         _get_license_from_metadata,
         _get_license_from_classifiers,
-        _get_license_from_source
+        _get_license_from_source,
     ]
 
     results = []
@@ -69,8 +75,8 @@ def get_license(metadata):
             if valid:
                 return valid, license
             else:
-                if not license in results and license:
+                if license and license != "NOASSERTION" and license not in results:
                     results.append(license)
 
     # arbitrarily return the last invalid license found
-    return False, results[-1] if results else None
+    return False, results[-1] if results else "NOASSERTION"

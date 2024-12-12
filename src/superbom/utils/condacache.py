@@ -1,24 +1,25 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import bz2
-import requests
-from tqdm import tqdm 
-import os
 import json
+import os
 from pathlib import Path
-import platform
+
+import requests
+from tqdm import tqdm
+
 from superbom.utils.logger import AppLogger
+
 logger = AppLogger().get_logger()
 
-class CondaCache():
+
+class CondaCache:
     # Conda Channels
     # -------------
-    DEFAULT_CHANNELS = [
-        'conda-forge'
-    ]
+    DEFAULT_CHANNELS = ["conda-forge"]
 
-    BANNED_CHANNELS = [
-        'anaconda',
-        'defaults'
-    ]
+    BANNED_CHANNELS = ["anaconda", "defaults"]
 
     def __init__(self):
         self._cache_dir = Path.joinpath(Path.home(), ".cbomcache")
@@ -33,7 +34,7 @@ class CondaCache():
         if not data:
             logger.debug(f"Failed to add cache for {channel}/{platform}")
             return None
-        
+
         if channel not in self.caches:
             self.caches[channel] = {}
 
@@ -49,11 +50,11 @@ class CondaCache():
             data = self.add_cache(channel, platform)
 
         return data
-    
+
     @property
     def cache_dir(self) -> Path:
         return self._cache_dir
-    
+
     def get_platforms(self):
         platforms = []
         # system = platform.system().lower()
@@ -67,16 +68,18 @@ class CondaCache():
         #    platforms.append('win-64' if machine == 'amd64' else 'win-32')
         # else:
         #     raise ValueError(f"Unsupported platform: {system}")
-        
+
         # Also add no-arch platform
-        platforms.append('noarch')
+        platforms.append("noarch")
 
         return platforms
 
     def add_channels(self, channels):
         for channel in channels:
             if channel in self.BANNED_CHANNELS:
-                logger.warning("Warning - Skipping Anaconda channels - we're not allowed to use them.")
+                logger.warning(
+                    "Warning - Skipping Anaconda channels - we're not allowed to use them."
+                )
                 continue
 
             if channel not in self.channels:
@@ -95,8 +98,8 @@ class CondaCache():
 
         if channel in self.BANNED_CHANNELS:
             logger.debug(f"Warning - Skipping banned channel: {channel}")
-            channel = 'conda-forge'
-        
+            channel = "conda-forge"
+
         # Channel may have / in it, so replace with _
         channelpath = channel.replace("/", "_")
 
@@ -108,7 +111,7 @@ class CondaCache():
         if not os.path.exists(cache_file):
             return None
         else:
-            with open(cache_file, 'r') as f:
+            with open(cache_file, "r") as f:
                 return json.load(f)
 
     def cache_data(self, channel, platform):
@@ -125,20 +128,25 @@ class CondaCache():
             logger.debug(f"Failed to download data for {channel}/{platform}")
             return
 
-        with open(cache_file, 'w') as f:
+        with open(cache_file, "w") as f:
             info = json.loads(raw_data)
             json.dump(info, f, indent=4)
 
     def download_json(self, channel, platform):
         json_str = None
         url = f"https://conda.anaconda.org/{channel}/{platform}/repodata.json.bz2"
-        
+
         # download the json with progress bar
         response = requests.get(url, stream=True)
         if response.status_code == 200:
-            total_size = int(response.headers.get('content-length', 0))
+            total_size = int(response.headers.get("content-length", 0))
             block_size = 1024 * 1024 * 3  # 3 Mebibyte
-            t = tqdm(total=total_size, unit='iB', unit_scale=True, bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
+            t = tqdm(
+                total=total_size,
+                unit="iB",
+                unit_scale=True,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]",
+            )
 
             tmp = b""
             for data in response.iter_content(block_size):
@@ -164,6 +172,7 @@ class CondaCache():
                     self.download_json(channel, platform)
                 else:
                     logger.debug(f"Data for {channel}/{platform} already cached")
+
 
 if __name__ == "__main__":
     cache = CondaCache()

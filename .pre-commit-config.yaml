@@ -12,8 +12,6 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: detect-private-key
-      - id: check-executables-have-shebangs
-      - id: check-toml
       - id: check-case-conflict
       - id: check-added-large-files
 
@@ -69,5 +67,3 @@ repos:
     hooks:
       - id: prettier
         types: [yaml]
-
-exclude: 3rd_party_resources/|Demos/resources|.*\.md$|.*\.json$
