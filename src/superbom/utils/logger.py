@@ -6,7 +6,6 @@ import sys
 
 import colorlog
 
-
 class AppLogger:
     _instance = None
     _initialized = False

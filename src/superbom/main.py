@@ -8,8 +8,8 @@ from typing import Dict, List, Union
 
 import pandas as pd
 
-import superbom.condadependencies as condadependencies
-import superbom.pipdependencies as pipdependencies
+from superbom.utils.packageindexes.conda.condadependencies import CondaPackageUtil
+from superbom.utils.packageindexes.pypi.pipdependencies import PyPIPackageUtil
 from superbom.utils.logger import AppLogger
 from superbom.utils.parsers import (
     parse_conda_env,
@@ -63,6 +63,40 @@ def save_results(results: Dict[str, pd.DataFrame], output_path: str, format: str
 
 
 def generatebom(args: argparse.ArgumentParser):
+    """
+    Generates a Bill of Materials (BOM) from environment files.
+
+    Args:
+        args (argparse.ArgumentParser): Command-line arguments containing the following attributes:
+            - path (str): Path to the directory or file containing environment files.
+            - verbose (bool): Flag to enable verbose logging.
+            - platform (str, optional): Platform for which to retrieve package information.
+            - output (str, optional): Path to save the output file.
+            - format (str, optional): Format of the output file (e.g., 'table', 'json').
+
+    Returns:
+        None: The function saves the BOM to the specified output path in the specified format.
+
+    Environment Files:
+        - .yml: Conda environment files.
+        - .txt: Pip requirements files.
+        - .toml: Poetry files.
+
+    Processing Steps:
+        1. Filters environment files based on extensions (yml, txt, toml).
+        2. Parses each environment file and retrieves package information.
+        3. Conda environment files:
+            - Parses channels, conda packages, and pip packages.
+            - Retrieves package information from Conda and Pip.
+        4. Pip requirements files:
+            - Parses pip packages.
+            - Retrieves package information from Pip.
+        5. Poetry files:
+            - Parses pip packages.
+            - Retrieves package information from Pip.
+        6. Compiles the package information into a DataFrame.
+        7. Saves the results to the specified output path in the specified format.
+    """
     results: {str, pd.DataFrame} = {}
 
     if args.verbose:
@@ -79,7 +113,8 @@ def generatebom(args: argparse.ArgumentParser):
         if env_file.suffix.lower() == ".yml":
             logger.info(f"Processing conda env file: {env_file}")
             channels, conda_packages, pip_packages = parse_conda_env(env_file)
-            packageutil = condadependencies.CondaPackageUtil()
+            packageutil = CondaPackageUtil()
+            pipdependencies = PyPIPackageUtil()
             if args.platform:
                 packageutil._cache.add_platform(args.platform)
 

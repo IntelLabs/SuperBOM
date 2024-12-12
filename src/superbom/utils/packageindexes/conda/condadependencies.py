@@ -3,8 +3,10 @@
 
 import re
 
-from superbom.utils import condacache, licenseutils, pypiutils
+from superbom.utils import licenseutils
 from superbom.utils.logger import AppLogger
+from superbom.utils.packageindexes.conda import condacache
+from superbom.utils.packageindexes.pypi import pypiutils
 
 logger = AppLogger().get_logger()
 
