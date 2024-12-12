@@ -33,7 +33,7 @@ options:
 ### Project Setup
 ```
 # Navigate to project directory
-cd condabom
+cd superbom
 
 # Initialize poetry environment with Python 3.12+
 poetry env use python3.12
