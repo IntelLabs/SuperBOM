@@ -11,6 +11,11 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src/"
+            },
+
         },
         {
             "name": "Python Debugger: Main with Arguments",
@@ -23,19 +28,7 @@
                 "PYTHONPATH": "${workspaceFolder}/src/"
             },
             "justMyCode": false,
-            // "args": "${command:pickArgs}",
-            "args": [
-                "tests/data/",
-                // "tests/data/conda_env.yaml",
-                // "tests/data/environment.yml",
-                // "tests/data/",
-                "--platform",
-                "linux-64",
-                // "--output",
-                // "results.xlsx",
-                "-f",
-                "excel"
-            ],
+            "args": "${command:pickArgs}"
         }
     ]
 }
