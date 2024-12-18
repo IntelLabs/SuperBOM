@@ -5,7 +5,7 @@ import re
 
 from superbom.utils import licenseutils
 from superbom.utils.logger import AppLogger
-from superbom.utils.packageindexes.conda import condacache
+from superbom.utils.packageindexes.conda.condacache import CondaCache
 from superbom.utils.packageindexes.pypi import pypiutils
 
 logger = AppLogger().get_logger()
@@ -13,7 +13,7 @@ logger = AppLogger().get_logger()
 
 class CondaPackageUtil:
     def __init__(self):
-        self._cache = condacache.CondaCache()
+        self._cache = CondaCache()
 
     def parse_conda_dependency(self, dependency):
         # Regular expression to match the dependency pattern
@@ -43,7 +43,7 @@ class CondaPackageUtil:
 
         return components
 
-    def lookup_package(self, channel, platform, package, version=None):
+    def lookup_package_from_cache(self, channel, platform, package, version=None):
         data = self._cache.get_cache(channel, platform)
 
         if not data:
@@ -84,19 +84,25 @@ class CondaPackageUtil:
 
             parsed = self.parse_conda_dependency(package)
 
-            for channel in self._cache.channels:
-                package_info = {}
+            package_info = {}
+            found_channel = ""
+            found_platform = ""
 
-                for platform in self._cache.platforms:
+            channels = self._cache.channels
+
+            for channel in channels:
+                platforms = self._cache.platforms
+
+                for platform in platforms:
                     channel = parsed["channel"] if parsed["channel"] else channel
-                    info = self.lookup_package(
+                    info = self.lookup_package_from_cache(
                         channel, platform, parsed["package"], parsed["version"]
                     )
                     if not info:
-                        info = self.lookup_package(channel, platform, parsed["package"])
+                        info = self.lookup_package_from_cache(channel, platform, parsed["package"])
 
                     if not info:
-                        info = self.lookup_package(
+                        info = self.lookup_package_from_cache(
                             channel, platform, f"{parsed['package']}_{platform}"
                         )
 
@@ -113,6 +119,8 @@ class CondaPackageUtil:
 
                 if package_info:
                     # Found the package in the channel
+                    found_channel = channel
+                    found_platform = platform
                     break
 
             if not package_info:
@@ -139,12 +147,12 @@ class CondaPackageUtil:
                     "Version": version,
                     "License": license,
                     "Validated": validated,
-                    "Source": f"{channel}:{platform}",
+                    "Source": f"{found_channel}:{found_platform}",
                 }
             )
 
             logger.info(
-                f"Package: {name}, Version: {version}, License: {license}, Source: {channel}:{platform}"
+                f"Package: {name}, Version: {version}, License: {license}, Source: {found_channel}:{found_platform}"
             )
 
         return package_data

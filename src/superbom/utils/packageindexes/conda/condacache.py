@@ -5,6 +5,7 @@ import bz2
 import json
 import os
 from pathlib import Path
+from typing import List
 
 import requests
 from tqdm import tqdm
@@ -18,15 +19,15 @@ class CondaCache:
     # Conda Channels
     # -------------
     DEFAULT_CHANNELS = ["conda-forge"]
-
     BANNED_CHANNELS = ["anaconda", "defaults"]
+    DEFAULT_PLATFORMS = ["noarch"]
 
     def __init__(self):
         self._cache_dir = Path.joinpath(Path.home(), ".cbomcache")
 
         self.caches = {}
-        self.platforms = self.get_platforms()
-        self.channels = []
+        self._platforms:List[str] = self.DEFAULT_PLATFORMS
+        self._channels:List[str] = self.DEFAULT_CHANNELS
 
     def add_cache(self, channel, platform):
         data = self.get_cached_data(channel, platform)
@@ -55,38 +56,35 @@ class CondaCache:
     def cache_dir(self) -> Path:
         return self._cache_dir
 
-    def get_platforms(self):
-        platforms = []
-        # system = platform.system().lower()
-        # machine = platform.machine().lower()
+    @property
+    def platforms(self):
+        return self._platforms
 
-        # if system == 'darwin':
-        #     platforms.append('osx-64' if machine == 'x86_64' else 'osx-arm64')
-        # elif system == 'linux':
-        #     platforms.append('linux-64' if machine == 'x86_64' else 'linux-aarch64')
-        # elif system == 'windows':
-        #    platforms.append('win-64' if machine == 'amd64' else 'win-32')
-        # else:
-        #     raise ValueError(f"Unsupported platform: {system}")
+    @platforms.setter
+    def platforms(self, value:str):
+        if not isinstance(value, str):
+            raise TypeError("Platform must be a string")
 
-        # Also add no-arch platform
-        platforms.append("noarch")
+        if value not in self.platforms:
+            self._platforms.append(value)
 
-        return platforms
+    @property
+    def channels(self):
+        return self._channels
+    
+    @channels.setter
+    def channels(self, value: str) -> List[str]:
+        if not isinstance(value, str):
+            raise TypeError("Channel must be a string")
+        
+        if value in self.BANNED_CHANNELS:
+            logger.warning(
+                "Warning - Skipping Anaconda channels."
+            )
+        elif value not in self.channels:
+            self.channels.append(value)
 
-    def add_channels(self, channels):
-        for channel in channels:
-            if channel in self.BANNED_CHANNELS:
-                logger.warning(
-                    "Warning - Skipping Anaconda channels - we're not allowed to use them."
-                )
-                continue
-
-            if channel not in self.channels:
-                self.channels.append(channel)
-
-    def add_platform(self, platform):
-        self.platforms.append(platform)
+        return self._channels
 
     def is_cached(self, channel, platform):
         base = self.cache_dir
@@ -95,10 +93,6 @@ class CondaCache:
 
     def get_cached_data(self, channel, platform):
         logger.debug(f"Getting cached data for {channel}/{platform}")
-
-        if channel in self.BANNED_CHANNELS:
-            logger.debug(f"Warning - Skipping banned channel: {channel}")
-            channel = "conda-forge"
 
         # Channel may have / in it, so replace with _
         channelpath = channel.replace("/", "_")
@@ -174,6 +168,6 @@ class CondaCache:
                     logger.debug(f"Data for {channel}/{platform} already cached")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     cache = CondaCache()
     cache.update_cache()

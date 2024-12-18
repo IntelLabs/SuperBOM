@@ -6,7 +6,7 @@ import requests
 from superbom.utils.licenseutils import checklicense
 
 
-def get_license(source):
+def get_license(source): # pragma: no cover
     if "github.com" not in source:
         source = _search(source)
     return _lookuplicense(source)

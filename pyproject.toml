@@ -10,7 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.13"
 requests = "^2.32.3"
 pandas = "^2.2.3"
 PyYAML = "^6.0.2"
@@ -20,9 +20,14 @@ spdx-lookup = "^0.3.3"
 openpyxl = "^3.1.5"
 foss-flame = "^0.20.7"
 colorlog = "^6.9.0"
+poetry-core = "^1.9.1"
+packaging = "^24.2"
 
 [tool.poetry.scripts]
 superbom = "superbom.main:main"
+
+[tool.poetry.group.dev.dependencies]
+coverage = "^7.6.9"
 
 [build-system]
 requires = ["poetry-core"]

@@ -102,10 +102,10 @@ def generatebom(args: argparse.ArgumentParser):
     if args.verbose:
         logger.setLevel("DEBUG")
 
-    # if os.path.isdir(args.path):
     env_files = filter_by_extensions(args.path, ["yml", "txt", "toml"])
-    # else:
-    #     env_files = [args.path]
+
+    packageutil = CondaPackageUtil()
+    pipdependencies = PyPIPackageUtil()
 
     for env_file in env_files:
         output_data = []
@@ -113,8 +113,6 @@ def generatebom(args: argparse.ArgumentParser):
         if env_file.suffix.lower() == ".yml":
             logger.info(f"Processing conda env file: {env_file}")
             channels, conda_packages, pip_packages = parse_conda_env(env_file)
-            packageutil = CondaPackageUtil()
-            pipdependencies = PyPIPackageUtil()
             if args.platform:
                 packageutil._cache.add_platform(args.platform)
 
@@ -201,5 +199,5 @@ def main(argv=None):
     generatebom(args)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     main()
