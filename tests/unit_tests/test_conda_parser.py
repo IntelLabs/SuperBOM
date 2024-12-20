@@ -52,15 +52,5 @@ class TestParseCondaEnv(unittest.TestCase):
         self.assertEqual(pip_packages[0].name, "requests")
         self.assertEqual(pip_packages[1].name, "pytest")
 
-    # def test_parse_conda_env_invalid(self):
-    #     conda_channels, conda_packages, pip_packages = parse_conda_env(self.invalid_conda_env_path)
-    #     self.assertEqual(conda_channels, ["defaults"])
-    #     self.assertEqual(len(conda_packages), 2)
-    #     self.assertEqual(conda_packages[0], "python=3.8")
-    #     self.assertEqual(conda_packages[1], "numpy=1.19.2")
-    #     self.assertEqual(len(pip_packages), 2)
-    #     self.assertEqual(pip_packages[0].name, "requests")
-    #     self.assertEqual(pip_packages[1].name, "pytest")
-
 if __name__ == "__main__":
     unittest.main()
