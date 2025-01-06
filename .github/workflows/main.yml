@@ -39,14 +39,19 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install poetry
 
+      - name: Configure Poetry to create virtual environment in project directory
+        run: |
+          poetry config virtualenvs.in-project true
+
       - name: Install dependencies
         run: |
           poetry install
-
+  
       - name: Run tests
         run: |
+          source .venv/bin/activate
           poetry run pytest
-
+          
       - name: Upload coverage report
         uses: actions/upload-artifact@v4.4.0
         with:
