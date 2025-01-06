@@ -1,0 +1,58 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Unit Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: linux
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Cache Python virtual environment
+        uses: actions/cache@v4.0.2
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-python-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
+      - name: Install Poetry
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install poetry
+
+      - name: Install dependencies
+        run: |
+          poetry install
+
+      - name: Run tests
+        run: |
+          poetry shell
+          pytest
+        working-directory: ./src
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: coverage-report
+          path: |
+            superbom/htmlcov/
+            superbom/coverage.xml
