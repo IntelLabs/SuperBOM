@@ -67,8 +67,8 @@ class TestCondaPackageUtil(unittest.TestCase):
             "packages.conda": {},
         }
 
-        dep = "conda-forge::test-package=1.0.0"
-        result = self.util.retrieve_conda_package_info(dep)
+        deps = ["conda-forge::test-package=1.0.0"]
+        result = self.util.retrieve_conda_package_info(deps)
 
         expected = [
             {
@@ -100,8 +100,8 @@ class TestCondaPackageUtil(unittest.TestCase):
             "packages.conda": {},
         }
 
-        dep = "conda-forge::test-package=1.0.0"
-        result = self.util.retrieve_conda_package_info(dep)
+        deps = ["conda-forge::test-package=1.0.0"]
+        result = self.util.retrieve_conda_package_info(deps)
         expected = [
             {
                 "Package": "test-package",
@@ -129,8 +129,8 @@ class TestCondaPackageUtil(unittest.TestCase):
         mock_platforms.return_value = ["noarch"]
         mock_get_cache.return_value = None
 
-        dep = "conda-forge::nonexistent-package"
-        result = self.util.retrieve_conda_package_info(dep)
+        deps = ["conda-forge::nonexistent-package"]
+        result = self.util.retrieve_conda_package_info(deps)
         expected = [
             {
                 "Package": "nonexistent-package",

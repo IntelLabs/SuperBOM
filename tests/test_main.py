@@ -79,23 +79,19 @@ class TestMain(unittest.TestCase):
         mock_parse_conda,
     ):
         mock_args = argparse.Namespace(
-            path="test_path", verbose=True, platform=None, output="output.json", format="json"
+            path="test_path", verbose=True, platform=None, output="output.xlsx", format="excel"
         )
         mock_conda_util.return_value.retrieve_conda_package_info.return_value = []
         mock_pip_util.return_value.get_pip_packages_data.return_value = []
         mock_parse_conda.return_value = [], [], []
 
         with patch("superbom.main.filter_by_extensions") as mock_filter:
-            mock_filter.return_value = [
-                Path("environment.yaml"),
-                Path("requirements.txt"),
-                Path("pyproject.toml"),
-            ]
+            mock_filter.return_value = [Path("test.yml"), Path("test.txt"), Path("test.toml")]
             generatebom(mock_args)
 
-            mock_parse_conda.assert_called_once_with(Path("environment.yaml"))
-            mock_parse_requirements.assert_called_once_with(Path("requirements.txt"))
-            mock_parse_poetry.assert_called_once_with(Path("pyproject.toml"))
+            mock_parse_conda.assert_called_once_with(Path("test.yml"))
+            mock_parse_requirements.assert_called_once_with(Path("test.txt"))
+            mock_parse_poetry.assert_called_once_with(Path("test.toml"))
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("superbom.main.generatebom")
