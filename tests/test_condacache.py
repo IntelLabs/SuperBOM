@@ -1,16 +1,20 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from superbom.utils.packageindexes.conda.condacache import CondaCache
 
-class TestCondaCache(unittest.TestCase):
 
+class TestCondaCache(unittest.TestCase):
     def setUp(self):
         self.cache = CondaCache()
 
     @patch("superbom.utils.packageindexes.conda.condacache.requests.get")
     @patch("bz2.decompress")
-    def test_download_json_success(self,mock_decompress, mock_get):
+    def test_download_json_success(self, mock_decompress, mock_get):
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.headers = {"content-length": "100"}
@@ -93,7 +97,7 @@ class TestCondaCache(unittest.TestCase):
         self.assertIn("conda-forge", cache.channels)
         self.assertNotIn("defaults", cache.channels)
         self.assertCountEqual(cache.channels, ["conda-forge"])
-    
+
     def test_add_invalid_channel(self):
         cache = CondaCache()
         with self.assertRaises(TypeError):

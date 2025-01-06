@@ -1,11 +1,16 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import logging
-from io import StringIO
-import colorlog
 import unittest
+from io import StringIO
+
+import colorlog
+
 from superbom.utils.logger import AppLogger
 
-class TestAppLogger(unittest.TestCase):
 
+class TestAppLogger(unittest.TestCase):
     def setUp(self):
         self.logger_instance = AppLogger()
         self.logger = self.logger_instance.get_logger()
@@ -47,6 +52,7 @@ class TestAppLogger(unittest.TestCase):
 
         log_contents = log_output.getvalue()
         self.assertIn("\x1b[32mINFO    \x1b[0m Test info message\x1b[0m", log_contents)
+
 
 if __name__ == "__main__":
     unittest.main()

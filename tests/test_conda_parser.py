@@ -1,9 +1,13 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import unittest
 from pathlib import Path
+
 from superbom.utils.parsers import parse_conda_env
 
-class TestParseCondaEnv(unittest.TestCase):
 
+class TestParseCondaEnv(unittest.TestCase):
     def setUp(self):
         self.valid_conda_env_content = """
         name: example
@@ -51,6 +55,7 @@ class TestParseCondaEnv(unittest.TestCase):
         self.assertEqual(len(pip_packages), 2)
         self.assertEqual(pip_packages[0].name, "requests")
         self.assertEqual(pip_packages[1].name, "pytest")
+
 
 if __name__ == "__main__":
     unittest.main()

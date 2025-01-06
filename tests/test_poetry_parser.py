@@ -1,10 +1,15 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import unittest
 from pathlib import Path
-from superbom.utils.parsers import parse_poetry_toml
+
 from poetry.core.packages.dependency import Dependency
 
-class TestParsePoetryToml(unittest.TestCase):
+from superbom.utils.parsers import parse_poetry_toml
 
+
+class TestParsePoetryToml(unittest.TestCase):
     def setUp(self):
         self.valid_toml_content = """
         [tool.poetry]
@@ -64,6 +69,7 @@ class TestParsePoetryToml(unittest.TestCase):
         self.assertEqual(packages[0].name, "python")
         self.assertEqual(packages[1].name, "requests")
         self.assertEqual(packages[2].name, "pytest")
+
 
 if __name__ == "__main__":
     unittest.main()

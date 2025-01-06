@@ -22,12 +22,11 @@ foss-flame = "^0.20.7"
 colorlog = "^6.9.0"
 poetry-core = "^1.9.1"
 packaging = "^24.2"
+pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
 
 [tool.poetry.scripts]
 superbom = "superbom.main:main"
-
-[tool.poetry.group.dev.dependencies]
-coverage = "^7.6.9"
 
 [build-system]
 requires = ["poetry-core"]

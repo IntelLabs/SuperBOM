@@ -1,7 +1,13 @@
-from pathlib import Path
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import unittest
-from superbom.utils.parsers import parse_requirements, parse_requirement
+from pathlib import Path
+
 from packaging._tokenizer import ParserSyntaxError
+
+from superbom.utils.parsers import parse_requirement, parse_requirements
+
 
 class TestParseRequirement(unittest.TestCase):
     def test_valid_requirement(self):
@@ -20,10 +26,12 @@ class TestParseRequirement(unittest.TestCase):
 
     def test_invalid_requirement(self):
         requirement_str = "invalid_requirement"
-        with unittest.mock.patch('superbom.utils.parsers.parse_requirement') as mock_parse:
-            mock_parse.side_effect = ParserSyntaxError("Invalid requirement", source=requirement_str, span=(0, 0))
-            
-            assert (parse_requirement(requirement_str) is not None)
+        with unittest.mock.patch("superbom.utils.parsers.parse_requirement") as mock_parse:
+            mock_parse.side_effect = ParserSyntaxError(
+                "Invalid requirement", source=requirement_str, span=(0, 0)
+            )
+
+            assert parse_requirement(requirement_str) is not None
 
     def test_requirement_with_extras(self):
         requirement_str = "requests[security]>=2.23.0"
@@ -74,6 +82,7 @@ class TestParseRequirement(unittest.TestCase):
         self.assertEqual(result, [])
 
         test_file.unlink()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,4 +6,4 @@ tests/fuzzer
 .DS_Store
 tmp
 *.pyc
-.coverage
+.coverage*
