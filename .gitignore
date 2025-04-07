@@ -7,3 +7,8 @@ tests/fuzzer
 tmp
 *.pyc
 .coverage
+coverage.xml
+*.xlsx
+*.xls
+*.csv
+*.json
