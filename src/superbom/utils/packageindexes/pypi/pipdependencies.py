@@ -25,7 +25,7 @@ class PyPIPackageUtil:
 
         return package_data
 
-    def get_pip_package_data(self, package) -> dict:
+    def get_pip_package_data(self, package) -> list:
         package_data = []
 
         # Skip python package
