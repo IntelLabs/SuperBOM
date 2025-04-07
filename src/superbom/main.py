@@ -2,16 +2,20 @@
 # SPDX-License-Identifier: Apache 2.0
 
 import argparse
+import logging
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Dict, List, Union
 
 import pandas as pd
+import tqdm
 
+from superbom.utils.logger import AppLogger
 from superbom.utils.packageindexes.conda.condadependencies import CondaPackageUtil
 from superbom.utils.packageindexes.pypi.pipdependencies import PyPIPackageUtil
-from superbom.utils.logger import AppLogger
 from superbom.utils.parsers import (
+    extract_toml_dependencies,
     parse_conda_env,
     parse_poetry_toml,
     parse_requirements,
@@ -48,6 +52,11 @@ def save_results(results: Dict[str, pd.DataFrame], output_path: str, format: str
         try:
             with pd.ExcelWriter(output_path, engine="openpyxl", mode="w") as writer:
                 for sheet_name, df in results.items():
+                    if df.empty:
+                        logger.warning(f"DataFrame for {sheet_name} is empty. Skipping.")
+                        continue
+                    # Ensure the sheet name is valid
+                    sheet_name = sheet_name[:31]  # Excel sheet name limit
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
         except Exception as e:
             logger.error(f"Error writing to Excel file: {e}")
@@ -62,6 +71,31 @@ def save_results(results: Dict[str, pd.DataFrame], output_path: str, format: str
                 logger.info(f"License Info: {result}\n{df}")
 
 
+def process_items(items, process_method, *args, **kwargs) -> List:
+    """
+    Process items using the specified method.
+
+    Args:
+        items (list): List of items to process.
+        process_method (callable): Method to process each item.
+        *args: Additional arguments to pass to the process method.
+        **kwargs: Additional keyword arguments to pass to the process method.
+    """
+    results = []
+
+    for item in tqdm.tqdm(
+        items, desc="Processing items", unit="item", disable=logger.level > logging.INFO
+    ):
+        try:
+            result = process_method(item, *args, **kwargs)
+            if result:
+                results.append(result)
+        except Exception as e:
+            logger.error(f"Error processing item {item}: {e}")
+
+    return results
+
+
 def generatebom(args: argparse.ArgumentParser):
     """
     Generates a Bill of Materials (BOM) from environment files.
@@ -73,6 +107,7 @@ def generatebom(args: argparse.ArgumentParser):
             - platform (str, optional): Platform for which to retrieve package information.
             - output (str, optional): Path to save the output file.
             - format (str, optional): Format of the output file (e.g., 'table', 'json').
+            - version: Display the version of the package.
 
     Returns:
         None: The function saves the BOM to the specified output path in the specified format.
@@ -102,46 +137,64 @@ def generatebom(args: argparse.ArgumentParser):
     if args.verbose:
         logger.setLevel("DEBUG")
 
-    env_files = filter_by_extensions(args.path, ["yml", "txt", "toml"])
+    env_files = filter_by_extensions(args.path, ["yml", "yaml", "txt", "toml"])
 
     packageutil = CondaPackageUtil()
     pipdependencies = PyPIPackageUtil()
 
-    for env_file in env_files:
+    for index, env_file in enumerate(env_files):
         output_data = []
 
-        if env_file.suffix.lower() == ".yml":
+        if env_file.suffix.lower() in [".yml", ".yaml"] and env_file.stem == "environment":
             logger.info(f"Processing conda env file: {env_file}")
             channels, conda_packages, pip_packages = parse_conda_env(env_file)
+            if not conda_packages:
+                logger.warning(f"No conda packages found in {env_file}. Skipping.")
+                continue
+            if not channels:
+                logger.warning(f"No channels found in {env_file}. Skipping.")
+                continue
+            if not pip_packages:
+                logger.warning(f"No pip packages found in {env_file}. Skipping.")
+                continue
+
             if args.platform:
-                packageutil._cache.add_platform(args.platform)
+                packageutil._cache.platforms.append(args.platform)
 
             if channels:
-                packageutil._cache.add_channels(channels)
+                for channel in channels:
+                    packageutil._cache.add_channel(channel)
+
             else:
                 logger.warning("No channels specified in environment file. Using defaults.")
-                packageutil._cache.add_channels(packageutil._cache.DEFAULT_CHANNELS)
+                packageutil._cache.channels(packageutil._cache.DEFAULT_CHANNELS)
 
-            conda_data = packageutil.retrieve_conda_package_info(conda_packages)
-            conda_pip_data = pipdependencies.get_pip_packages_data(pip_packages)
-            output_data.extend(conda_data + conda_pip_data)
-            output_data = conda_data + conda_pip_data
+            conda_data = process_items(conda_packages, packageutil.retrieve_conda_package_info)
+            output_data.extend(conda_data)
+            conda_pip_data = process_items(pip_packages, pipdependencies.get_pip_package_data)
+            output_data.extend(conda_pip_data)
 
-        elif env_file.suffix.lower() == ".txt":
+        elif env_file.suffix.lower() == ".txt" and env_file.stem == "requirements":
             logger.info(f"Processing pip requirements file: {env_file}")
             pip_packages = parse_requirements(env_file)
-            pip_data = pipdependencies.get_pip_packages_data(pip_packages)
+            pip_data = process_items(pip_packages, pipdependencies.get_pip_package_data)
             output_data.extend(pip_data)
 
-        elif env_file.suffix.lower() == ".toml":
-            logger.info(f"Processing poetry file: {env_file}")
+        elif env_file.suffix.lower() == ".toml" and env_file.stem == "pyproject":
+            logger.info(f"Processing pyproject file: {env_file}")
 
             pip_packages = parse_poetry_toml(env_file)
-            pip_data = pipdependencies.get_pip_packages_data(pip_packages)
+            if not pip_packages:
+                pip_packages = extract_toml_dependencies(env_file)
+            pip_data = process_items(pip_packages, pipdependencies.get_pip_package_data)
             output_data.extend(pip_data)
 
-        df = pd.DataFrame(output_data)
-        results[env_file.name] = df
+        if output_data:
+            df = pd.DataFrame(output_data)
+            # use the parent directory name as the sheet name
+            sheet_name = env_file.parent.name if env_file.parent.name else "default"
+
+            results[sheet_name] = df
 
     # Save results
     # output_path = args.output if args.output else 'bom.xlsx'
@@ -195,9 +248,18 @@ def main(argv=None):
     # Verbosity command
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
 
+    # Version command
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"%(prog)s {version('superbom')}",
+        help="Show version and exit",
+    )
+
     args = parser.parse_args(argv)
     generatebom(args)
 
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

@@ -26,8 +26,8 @@ class CondaCache:
         self._cache_dir = Path.joinpath(Path.home(), ".cbomcache")
 
         self.caches = {}
-        self._platforms:List[str] = self.DEFAULT_PLATFORMS
-        self._channels:List[str] = self.DEFAULT_CHANNELS
+        self._platforms: List[str] = self.DEFAULT_PLATFORMS
+        self._channels: List[str] = self.DEFAULT_CHANNELS
 
     def add_cache(self, channel, platform):
         data = self.get_cached_data(channel, platform)
@@ -61,7 +61,7 @@ class CondaCache:
         return self._platforms
 
     @platforms.setter
-    def platforms(self, value:str):
+    def platforms(self, value: str):
         if not isinstance(value, str):
             raise TypeError("Platform must be a string")
 
@@ -71,18 +71,16 @@ class CondaCache:
     @property
     def channels(self):
         return self._channels
-    
-    @channels.setter
-    def channels(self, value: str) -> List[str]:
+
+    def add_channel(self, value: str):
+
         if not isinstance(value, str):
             raise TypeError("Channel must be a string")
-        
+
         if value in self.BANNED_CHANNELS:
-            logger.warning(
-                "Warning - Skipping Anaconda channels."
-            )
-        elif value not in self.channels:
-            self.channels.append(value)
+            logger.warning("Warning - Skipping Anaconda channels.")
+        elif value not in self._channels:
+            self._channels.append(value)
 
         return self._channels
 
@@ -168,6 +166,6 @@ class CondaCache:
                     logger.debug(f"Data for {channel}/{platform} already cached")
 
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     cache = CondaCache()
     cache.update_cache()
