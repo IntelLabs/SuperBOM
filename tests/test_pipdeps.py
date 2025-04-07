@@ -23,7 +23,7 @@ class TestPyPIPackageUtil(unittest.TestCase):
         mock_get_license.return_value = (True, "MIT")
 
         util = PyPIPackageUtil()
-        result = util.get_pip_package_data(mock_package)
+        result = util.get_pip_packages_data([mock_package])
 
         expected_result = [
             {
@@ -48,7 +48,7 @@ class TestPyPIPackageUtil(unittest.TestCase):
         mock_get_license.return_value = (True, "MIT")
 
         util = PyPIPackageUtil()
-        result = util.get_pip_package_data(mock_package)
+        result = util.get_pip_packages_data([mock_package])
 
         expected_result = [
             {
@@ -67,7 +67,7 @@ class TestPyPIPackageUtil(unittest.TestCase):
         mock_package.name = "python"
 
         util = PyPIPackageUtil()
-        result = util.get_pip_package_data(mock_package)
+        result = util.get_pip_packages_data([mock_package])
 
         self.assertEqual(result, [])
 

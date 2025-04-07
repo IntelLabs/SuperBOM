@@ -24,7 +24,6 @@ poetry-core = "^1.9.1"
 packaging = "^24.2"
 pytest = "^8.3.4"
 pytest-cov = "^6.0.0"
-tomli = "^2.2.1"
 
 [tool.poetry.scripts]
 superbom = "superbom.main:main"
