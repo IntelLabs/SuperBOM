@@ -1,16 +1,20 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache 2.0
+
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from superbom.utils.packageindexes.conda.condacache import CondaCache
 
-class TestCondaCache(unittest.TestCase):
 
+class TestCondaCache(unittest.TestCase):
     def setUp(self):
         self.cache = CondaCache()
 
     @patch("superbom.utils.packageindexes.conda.condacache.requests.get")
     @patch("bz2.decompress")
-    def test_download_json_success(self,mock_decompress, mock_get):
+    def test_download_json_success(self, mock_decompress, mock_get):
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.headers = {"content-length": "100"}
@@ -76,28 +80,28 @@ class TestCondaCache(unittest.TestCase):
 
     def test_add_existing_channel(self):
         cache = CondaCache()
-        cache.channels = "conda-forge"
+        cache.add_channel("conda-forge")
         self.assertIn("conda-forge", cache.channels)
         self.assertCountEqual(cache.channels, ["conda-forge"])
 
     def test_add_new_channel(self):
         cache = CondaCache()
-        cache.channels = "my-channel"
+        cache.add_channel("my-channel")
         self.assertIn("conda-forge", cache.channels)
         self.assertIn("my-channel", cache.channels)
         self.assertCountEqual(cache.channels, ["conda-forge", "my-channel"])
 
     def test_add_banned_channel(self):
         cache = CondaCache()
-        cache.channels = "defaults"
+        cache.add_channel("defaults")
         self.assertIn("conda-forge", cache.channels)
         self.assertNotIn("defaults", cache.channels)
         self.assertCountEqual(cache.channels, ["conda-forge"])
-    
+
     def test_add_invalid_channel(self):
         cache = CondaCache()
         with self.assertRaises(TypeError):
-            self.cache.channels = 123
+            self.cache.add_channel(123)
         self.assertIn("conda-forge", cache.channels)
 
     def test_add_platform(self):

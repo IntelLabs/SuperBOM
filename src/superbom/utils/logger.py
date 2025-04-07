@@ -6,6 +6,7 @@ import sys
 
 import colorlog
 
+
 class AppLogger:
     _instance = None
     _initialized = False
@@ -48,3 +49,6 @@ class AppLogger:
 
     def get_logger(self):
         return self.logger
+
+    def get_level(self):
+        return self.logger.level

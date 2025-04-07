@@ -75,84 +75,84 @@ class CondaPackageUtil:
                 return key, dictionary[key]
         return None, None
 
-    def retrieve_conda_package_info(self, deps) -> list:
+    def retrieve_conda_package_info(self, package) -> dict:
         package_data = []
-        for package in deps:
-            # make sure there's a package name
-            if not package:
-                continue
 
-            parsed = self.parse_conda_dependency(package)
+        # make sure there's a package name
+        if not package:
+            return package_data
 
-            package_info = {}
-            found_channel = ""
-            found_platform = ""
+        parsed = self.parse_conda_dependency(package)
 
-            channels = self._cache.channels
+        package_info = {}
+        found_channel = ""
+        found_platform = ""
 
-            for channel in channels:
-                platforms = self._cache.platforms
+        channels = self._cache.channels
 
-                for platform in platforms:
-                    channel = parsed["channel"] if parsed["channel"] else channel
+        for channel in channels:
+            platforms = self._cache.platforms
+
+            for platform in platforms:
+                channel = parsed["channel"] if parsed["channel"] else channel
+                info = self.lookup_package_from_cache(
+                    channel, platform, parsed["package"], parsed["version"]
+                )
+                if not info:
+                    info = self.lookup_package_from_cache(channel, platform, parsed["package"])
+
+                if not info:
                     info = self.lookup_package_from_cache(
-                        channel, platform, parsed["package"], parsed["version"]
+                        channel, platform, f"{parsed['package']}_{platform}"
                     )
-                    if not info:
-                        info = self.lookup_package_from_cache(channel, platform, parsed["package"])
 
-                    if not info:
-                        info = self.lookup_package_from_cache(
-                            channel, platform, f"{parsed['package']}_{platform}"
-                        )
-
-                    package_info = info[1] if info else None
-
-                    if package_info:
-                        # Found the package in the platform
-                        _, license_info = self._find_license(package_info, "license")
-
-                        if license_info:
-                            break
-                        else:
-                            continue
+                package_info = info[1] if info else None
 
                 if package_info:
-                    # Found the package in the channel
-                    found_channel = channel
-                    found_platform = platform
-                    break
+                    # Found the package in the platform
+                    _, license_info = self._find_license(package_info, "license")
 
-            if not package_info:
-                logger.debug(f"Failed to find package: {parsed['package']} in all channels")
-                package_info = {}
+                    if license_info:
+                        break
+                    else:
+                        continue
 
-            name = package_info.get("name", parsed["package"])
-            version = package_info.get("version", parsed["version"])
+            if package_info:
+                # Found the package in the channel
+                found_channel = channel
+                found_platform = platform
+                break
 
-            _, license_info = self._find_license(package_info, "license")
+        if not package_info:
+            logger.debug(f"Failed to find package: {parsed['package']} in all channels")
+            package_info = {}
 
-            if license_info:
-                validated, license = licenseutils.checklicense(license_info)
+        name = package_info.get("name", parsed["package"])
+        version = package_info.get("version", parsed["version"])
 
-                # if not validated, check PyPI to see if we can find the license
-                if not validated:
-                    validated, license = pypiutils.get_license(package_info)
-            else:
-                validated, license = False, "No License Information"
+        _, license_info = self._find_license(package_info, "license")
 
-            package_data.append(
-                {
-                    "Package": name,
-                    "Version": version,
-                    "License": license,
-                    "Validated": validated,
-                    "Source": f"{found_channel}:{found_platform}",
-                }
-            )
+        if license_info:
+            validated, license = licenseutils.checklicense(license_info)
 
-            logger.info(
-                f"Package: {name}, Version: {version}, License: {license}, Source: {found_channel}:{found_platform}"
-            )
+            # if not validated, check PyPI to see if we can find the license
+            if not validated:
+                validated, license = pypiutils.get_license(package_info)
+        else:
+            validated, license = False, "No License Information"
+
+        package_data.append(
+            {
+                "Package": name,
+                "Version": version,
+                "License": license,
+                "Validated": validated,
+                "Source": f"{found_channel}:{found_platform}",
+            }
+        )
+
+        logger.debug(
+            f"Package: {name}, Version: {version}, License: {license}, Source: {found_channel}:{found_platform}"
+        )
 
         return package_data

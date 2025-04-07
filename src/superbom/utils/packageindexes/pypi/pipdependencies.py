@@ -7,6 +7,7 @@ import superbom.utils.packageindexes.pypi.pypiutils as pypiutils
 from superbom.utils import githubutils
 from superbom.utils.logger import AppLogger
 
+
 class PyPIPackageUtil:
     def __init__(self):
         self.logger = AppLogger().get_logger()
@@ -24,52 +25,51 @@ class PyPIPackageUtil:
 
         return package_data
 
-    def get_pip_packages_data(self, packages) -> list:
+    def get_pip_package_data(self, package) -> list:
         package_data = []
 
-        for package in packages:
-            # Skip python package
-            if package.name == "python":
-                continue
+        # Skip python package
+        if package.name == "python":
+            return package_data
 
-            metadata = self._getpypimetadata(package)
+        metadata = self._getpypimetadata(package)
 
-            if metadata:
-                name = metadata.get("name", "N/A")
-                version = metadata.get("version", "N/A")
-                validated, license = pypiutils.get_license(metadata)
-                source = "pypi"
+        if metadata:
+            name = metadata.get("name", "N/A")
+            version = metadata.get("version", "N/A")
+            validated, license = pypiutils.get_license(metadata)
+            source = "pypi"
 
-                package_data.append(
-                    {
-                        "Package": name,
-                        "Version": version,
-                        "License": license,
-                        "Validated": validated,
-                        "Source": source,
-                    }
-                )
-                self.logger.info(
-                    f"Package: {name}, Version: {version}, License: {license}, Source: {source}"
-                )
-            # HACK: Fix this
-            else:
-                # try to get license from github
-                self.logger.warning(f"Package: {package.name} not found on PyPI")
-                validated, license = githubutils.get_license(package.name)
-                version = "N/A"
-                source = "github"
-                package_data.append(
-                    {
-                        "Package": package.name,
-                        "Version": version,
-                        "License": license,
-                        "Validated": validated,
-                        "Source": source,
-                    }
-                )
-                self.logger.info(
-                    f"Package: {package.name}, Version: {version}, License: {license}, Source: {source}"
-                )
+            package_data.append(
+                {
+                    "Package": name,
+                    "Version": version,
+                    "License": license,
+                    "Validated": validated,
+                    "Source": source,
+                }
+            )
+            self.logger.debug(
+                f"Package: {name}, Version: {version}, License: {license}, Source: {source}"
+            )
+        # HACK: Fix this
+        else:
+            # try to get license from github
+            self.logger.warning(f"Package: {package.name} not found on PyPI")
+            validated, license = githubutils.get_license(package.name)
+            version = "N/A"
+            source = "github"
+            package_data.append(
+                {
+                    "Package": package.name,
+                    "Version": version,
+                    "License": license,
+                    "Validated": validated,
+                    "Source": source,
+                }
+            )
+            self.logger.debug(
+                f"Package: {package.name}, Version: {version}, License: {license}, Source: {source}"
+            )
 
         return package_data
