@@ -1,0 +1,63 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Unit Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Cache Python virtual environment
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.venv
+          key: ${{ runner.os }}-python-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-${{ hashFiles('**/poetry.lock') }}
+            ${{ runner.os }}-python-
+
+      - name: Install Poetry
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install poetry
+
+      - name: Configure Poetry to create virtual environment in project directory
+        run: |
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: |
+          poetry install
+          poetry env info
+
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          poetry run pytest
+
+      - name: Upload coverage report
+        if: ${{ !env.ACT }}
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
