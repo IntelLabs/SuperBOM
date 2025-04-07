@@ -167,7 +167,7 @@ def generatebom(args: argparse.ArgumentParser):
 
             else:
                 logger.warning("No channels specified in environment file. Using defaults.")
-                packageutil._cache.channels(packageutil._cache.DEFAULT_CHANNELS)
+                packageutil._cache.add_channel(packageutil._cache.DEFAULT_CHANNELS)
 
             conda_data = process_items(conda_packages, packageutil.retrieve_conda_package_info)
             output_data.extend(conda_data)
