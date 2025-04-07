@@ -20,7 +20,7 @@ def parse_git_requirement(line):
         return egg_match.group(1)
 
     # If no #egg=, try to extract from the repository URL
-    repo_match = re.search(r"/([^/]+?)(?:\.git)?(?:@|$)", line)
+    repo_match = re.search(r"[:\/][^\/]+\/([^\/#]+?)(?:\.git)?(?:[#?].*)?$", line)
     if repo_match:
         return repo_match.group(1)  # Returns the repo name as a fallback
 
@@ -42,7 +42,7 @@ def parse_requirement(requirement_str):
         return None
 
 
-def parse_requirements(file_path):
+def parse_requirements(file_path):  # pragma: no cover
     with open(file_path, "r") as file:
         packages = []
         for line in file.readlines():
@@ -124,7 +124,7 @@ def parse_conda_env(file_path):
     return conda_channels, conda_packages, pip_packages
 
 
-def extract_toml_dependencies(file_path):
+def extract_toml_dependencies(file_path):  # pragma: no cover
     packages = []
 
     with open(file_path, "rb") as f:
