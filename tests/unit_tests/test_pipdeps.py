@@ -25,15 +25,14 @@ class TestPyPIPackageUtil(unittest.TestCase):
         util = PyPIPackageUtil()
         result = util.get_pip_package_data(mock_package)
 
-        expected_result = [
-            {
-                "Package": "testpackage",
-                "Version": "1.0.0",
-                "License": "MIT",
-                "Validated": True,
-                "Source": "pypi",
-            }
-        ]
+        expected_result = {
+            "Package": "testpackage",
+            "Version": "1.0.0",
+            "License": "MIT",
+            "Validated": True,
+            "Source": "pypi",
+        }
+
         self.assertEqual(result, expected_result)
 
     @patch("superbom.utils.packageindexes.pypi.pipdependencies.requests.get")
@@ -50,15 +49,14 @@ class TestPyPIPackageUtil(unittest.TestCase):
         util = PyPIPackageUtil()
         result = util.get_pip_package_data(mock_package)
 
-        expected_result = [
-            {
-                "Package": "testpackage",
-                "Version": "N/A",
-                "License": "MIT",
-                "Validated": True,
-                "Source": "github",
-            }
-        ]
+        expected_result = {
+            "Package": "testpackage",
+            "Version": "N/A",
+            "License": "MIT",
+            "Validated": True,
+            "Source": "github",
+        }
+
         self.assertEqual(result, expected_result)
 
     @patch("superbom.utils.packageindexes.pypi.pipdependencies.requests.get")
@@ -69,7 +67,7 @@ class TestPyPIPackageUtil(unittest.TestCase):
         util = PyPIPackageUtil()
         result = util.get_pip_package_data(mock_package)
 
-        self.assertEqual(result, [])
+        self.assertEqual(result, {})
 
 
 if __name__ == "__main__":

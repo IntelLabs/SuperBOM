@@ -70,15 +70,13 @@ class TestCondaPackageUtil(unittest.TestCase):
         dep = "conda-forge::test-package=1.0.0"
         result = self.util.retrieve_conda_package_info(dep)
 
-        expected = [
-            {
-                "Package": "test-package",
-                "Version": "1.0.0",
-                "License": "MIT",
-                "Validated": True,
-                "Source": "conda-forge:noarch",
-            }
-        ]
+        expected = {
+            "Package": "test-package",
+            "Version": "1.0.0",
+            "License": "MIT",
+            "Validated": True,
+            "Source": "conda-forge:noarch",
+        }
         self.assertEqual(result, expected)
 
     @patch("superbom.utils.packageindexes.conda.condadependencies.CondaCache.get_cache")
@@ -102,15 +100,14 @@ class TestCondaPackageUtil(unittest.TestCase):
 
         dep = "conda-forge::test-package=1.0.0"
         result = self.util.retrieve_conda_package_info(dep)
-        expected = [
-            {
-                "Package": "test-package",
-                "Version": "1.0.0",
-                "License": "No License Information",
-                "Validated": False,
-                "Source": "conda-forge:noarch",
-            }
-        ]
+        expected = {
+            "Package": "test-package",
+            "Version": "1.0.0",
+            "License": "No License Information",
+            "Validated": False,
+            "Source": "conda-forge:noarch",
+        }
+
         self.assertEqual(result, expected)
 
     @patch("superbom.utils.packageindexes.conda.condadependencies.CondaCache.get_cache")
@@ -131,15 +128,14 @@ class TestCondaPackageUtil(unittest.TestCase):
 
         dep = "conda-forge::nonexistent-package"
         result = self.util.retrieve_conda_package_info(dep)
-        expected = [
-            {
-                "Package": "nonexistent-package",
-                "Version": None,
-                "License": "No License Information",
-                "Validated": False,
-                "Source": ":",
-            }
-        ]
+        expected = {
+            "Package": "nonexistent-package",
+            "Version": None,
+            "License": "No License Information",
+            "Validated": False,
+            "Source": ":",
+        }
+
         self.assertEqual(result, expected)
 
 
