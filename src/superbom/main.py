@@ -71,7 +71,7 @@ def save_results(results: Dict[str, pd.DataFrame], output_path: str, format: str
                 logger.info(f"License Info: {result}\n{df}")
 
 
-def process_items(items, process_method, *args, **kwargs) -> List:
+def process_items(items, process_method, *args, **kwargs) -> set:
     """
     Process items using the specified method.
 
@@ -81,15 +81,13 @@ def process_items(items, process_method, *args, **kwargs) -> List:
         *args: Additional arguments to pass to the process method.
         **kwargs: Additional keyword arguments to pass to the process method.
     """
-    results = []
 
+    results = []
     for item in tqdm.tqdm(
         items, desc="Processing items", unit="item", disable=logger.level > logging.INFO
     ):
         try:
-            result = process_method(item, *args, **kwargs)
-            if result:
-                results.append(result)
+            results.append(process_method(item, *args, **kwargs))
         except Exception as e:
             logger.error(f"Error processing item {item}: {e}")
 

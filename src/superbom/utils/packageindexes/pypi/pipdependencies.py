@@ -25,8 +25,8 @@ class PyPIPackageUtil:
 
         return package_data
 
-    def get_pip_package_data(self, package) -> list:
-        package_data = []
+    def get_pip_package_data(self, package) -> dict:
+        package_data = {}
 
         # Skip python package
         if package.name == "python":
@@ -40,15 +40,13 @@ class PyPIPackageUtil:
             validated, license = pypiutils.get_license(metadata)
             source = "pypi"
 
-            package_data.append(
-                {
-                    "Package": name,
-                    "Version": version,
-                    "License": license,
-                    "Validated": validated,
-                    "Source": source,
-                }
-            )
+            package_data = {
+                "Package": name,
+                "Version": version,
+                "License": license,
+                "Validated": validated,
+                "Source": source,
+            }
             self.logger.debug(
                 f"Package: {name}, Version: {version}, License: {license}, Source: {source}"
             )
@@ -59,17 +57,12 @@ class PyPIPackageUtil:
             validated, license = githubutils.get_license(package.name)
             version = "N/A"
             source = "github"
-            package_data.append(
-                {
-                    "Package": package.name,
-                    "Version": version,
-                    "License": license,
-                    "Validated": validated,
-                    "Source": source,
-                }
-            )
-            self.logger.debug(
-                f"Package: {package.name}, Version: {version}, License: {license}, Source: {source}"
-            )
+            package_data = {
+                "Package": package.name,
+                "Version": version,
+                "License": license,
+                "Validated": validated,
+                "Source": source,
+            }
 
         return package_data
