@@ -76,15 +76,13 @@ class CondaPackageUtil:
         return None, None
 
     def retrieve_conda_package_info(self, package) -> dict:
-        package_data = []
+        package_data = {}
 
         # make sure there's a package name
         if not package:
             return package_data
 
         parsed = self.parse_conda_dependency(package)
-
-        package_info = {}
         found_channel = ""
         found_platform = ""
 
@@ -141,15 +139,13 @@ class CondaPackageUtil:
         else:
             validated, license = False, "No License Information"
 
-        package_data.append(
-            {
-                "Package": name,
-                "Version": version,
-                "License": license,
-                "Validated": validated,
-                "Source": f"{found_channel}:{found_platform}",
-            }
-        )
+        package_data = {
+            "Package": name,
+            "Version": version,
+            "License": license,
+            "Validated": validated,
+            "Source": f"{found_channel}:{found_platform}",
+        }
 
         logger.debug(
             f"Package: {name}, Version: {version}, License: {license}, Source: {found_channel}:{found_platform}"
