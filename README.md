@@ -109,3 +109,13 @@ pip install build
 python -m build
 ```
 
+## 🔒 Security
+
+SuperBOM follows security best practices:
+- **Signed Releases**: All releases are cryptographically signed using Sigstore
+- **Continuous Fuzzing**: Automated security fuzzing for input validation
+- **SLSA Provenance**: Supply chain integrity verification
+- **Regular Updates**: Automated dependency updates and security patches
+
+For security issues, see [SECURITY.md](SECURITY.md). For release verification, see [RELEASE.md](RELEASE.md).
+
