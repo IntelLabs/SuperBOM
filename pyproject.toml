@@ -36,6 +36,12 @@ dev = [
     "pytest>=8.3.4",
     "pytest-cov>=6.0.0",
 ]
+fuzzing = [
+    "hypothesis>=6.0.0",
+    "tomli-w>=1.0.0",
+    "coverage[toml]>=7.0.0",
+    "pytest>=8.3.4",  # For running property-based tests
+]
 
 [project.scripts]
 superbom = "superbom.main:main"

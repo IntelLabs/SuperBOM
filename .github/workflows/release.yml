@@ -1,0 +1,210 @@
+name: Release and Sign
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write  # For OIDC token generation
+
+jobs:
+  build-and-sign-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+
+      - name: Run tests
+        run: |
+          uv run pytest
+
+      - name: Build package
+        run: |
+          uv build
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.4'
+
+      - name: Get tag name
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          release_name: SuperBOM ${{ steps.tag.outputs.tag }}
+          body: |
+            ## SuperBOM ${{ steps.tag.outputs.tag }}
+            
+            ### 🔒 Signed Release
+            This release has been cryptographically signed using Sigstore for verification.
+            
+            ### 📦 Installation
+            ```bash
+            pip install superbom==${{ steps.tag.outputs.tag }}
+            ```
+            
+            ### 🔍 Verification
+            To verify the signature of the release artifacts:
+            ```bash
+            cosign verify-blob --bundle superbom-${{ steps.tag.outputs.tag }}.tar.gz.bundle superbom-${{ steps.tag.outputs.tag }}.tar.gz
+            ```
+            
+            ### 📋 Changes
+            See [CHANGELOG.md](CHANGELOG.md) for detailed changes in this release.
+            
+          draft: false
+          prerelease: false
+
+      - name: Sign and upload release artifacts
+        run: |
+          TAG=${{ steps.tag.outputs.tag }}
+          
+          # Sign all built artifacts
+          for file in dist/*; do
+            echo "Signing $file"
+            cosign sign-blob --bundle "${file}.bundle" "$file"
+          done
+          
+          # Upload signed artifacts to release
+          for file in dist/*; do
+            filename=$(basename "$file")
+            
+            # Upload original artifact
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create_release.outputs.id }}/assets?name=$filename"
+            
+            # Upload signature bundle
+            if [ -f "${file}.bundle" ]; then
+              curl -X POST \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"${file}.bundle" \
+                "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create_release.outputs.id }}/assets?name=${filename}.bundle"
+            fi
+          done
+
+      - name: Generate SLSA provenance
+        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+        with:
+          base64-subjects: |
+            ${{ hashFiles('dist/*') }}
+
+      - name: Update release with security information
+        run: |
+          # Create a security attestation file
+          cat > security-attestation.md << EOF
+          # Security Attestation for SuperBOM ${{ steps.tag.outputs.tag }}
+          
+          ## Signatures
+          This release includes cryptographic signatures for all artifacts using Sigstore/cosign.
+          
+          ## SLSA Provenance
+          This release includes SLSA Level 3 provenance information to verify the build process.
+          
+          ## Verification Commands
+          \`\`\`bash
+          # Verify package signature
+          cosign verify-blob --bundle <artifact>.bundle <artifact>
+          
+          # Verify SLSA provenance
+          slsa-verifier verify-artifact <artifact> --provenance-path <artifact>.intoto.jsonl --source-uri github.com/${{ github.repository }}
+          \`\`\`
+          
+          ## Build Environment
+          - Runner: ubuntu-latest
+          - Python: 3.11
+          - uv: latest
+          - Build timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          - Commit SHA: ${{ github.sha }}
+          EOF
+          
+          # Upload security attestation
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @security-attestation.md \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create_release.outputs.id }}/assets?name=security-attestation.md"
+
+  publish-to-pypi:
+    runs-on: ubuntu-latest
+    needs: build-and-sign-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+      - name: Build package
+        run: |
+          uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Sign PyPI package
+        run: |
+          # Install cosign
+          curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64"
+          sudo mv cosign-linux-amd64 /usr/local/bin/cosign
+          sudo chmod +x /usr/local/bin/cosign
+          
+          # Sign the uploaded package (for transparency log)
+          for file in dist/*.whl dist/*.tar.gz; do
+            if [ -f "$file" ]; then
+              cosign sign-blob --bundle "${file}.sig" "$file"
+              echo "Signed $file"
+            fi
+          done

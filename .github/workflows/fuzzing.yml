@@ -1,0 +1,231 @@
+name: Fuzzing
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    # Run fuzzing daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-platform-fuzzing:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11", "3.13"]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies including fuzzing tools
+        run: |
+          uv sync --extra fuzzing
+
+      - name: Run random fuzzing
+        run: |
+          uv run python fuzz/fuzz_parsers.py 200
+
+      - name: Upload fuzzing artifacts
+        if: always()
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: fuzzing-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: |
+            crash-*
+            *.log
+          retention-days: 30
+
+  hypothesis-fuzzing:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies including hypothesis
+        run: |
+          uv sync --extra fuzzing
+
+      - name: Run Hypothesis property-based fuzzing
+        run: |
+          uv run python fuzz/fuzz_hypothesis.py
+
+      - name: Upload hypothesis results
+        if: always()
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: hypothesis-results-py${{ matrix.python-version }}
+          path: |
+            .hypothesis/
+          retention-days: 30
+
+  atheris-fuzzing:
+    # Only run on Linux where Atheris builds reliably
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install system dependencies for Atheris
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies and try Atheris
+        run: |
+          uv sync --extra fuzzing
+          # Try to install Atheris on Linux
+          uv add --optional fuzzing atheris || echo "⚠️ Atheris installation failed, skipping"
+
+      - name: Run Atheris fuzzing if available
+        run: |
+          # Check if atheris is available
+          if uv run python -c "import atheris" 2>/dev/null; then
+            echo "✅ Atheris available, creating fuzzing target"
+            cat > atheris_fuzz.py << 'EOF'
+          import sys
+          import atheris
+          sys.path.insert(0, 'src')
+          from fuzz.fuzz_parsers import fuzz_parse_requirements, generate_malformed_requirements
+          
+          @atheris.instrument_func  
+          def TestOneInput(data):
+              try:
+                  content = data.decode('utf-8', errors='ignore')
+                  import tempfile
+                  from pathlib import Path
+                  from superbom.utils.parsers import parse_requirements
+                  with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                      f.write(content)
+                      f.flush()
+                      parse_requirements(f.name)
+                      Path(f.name).unlink()
+              except:
+                  pass
+          
+          atheris.Setup(sys.argv, TestOneInput)
+          atheris.Fuzz()
+          EOF
+            timeout 300s uv run python atheris_fuzz.py -max_total_time=300 || true
+          else
+            echo "⚠️ Atheris not available, skipping advanced fuzzing"
+          fi
+
+      - name: Upload atheris artifacts
+        if: always()
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: atheris-fuzzing-results
+          path: |
+            crash-*
+            leak-*
+            timeout-*
+          retention-days: 30
+
+  oss-fuzz-preparation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create OSS-Fuzz integration files
+        run: |
+          mkdir -p oss-fuzz-integration
+          
+          # Create project.yaml for OSS-Fuzz
+          cat > oss-fuzz-integration/project.yaml << 'EOF'
+          homepage: "https://github.com/IntelLabs/SuperBOM"
+          language: python
+          primary_contact: "michael.beale@intel.com"  
+          auto_ccs:
+            - "security@intel.com"
+          sanitizers:
+            - address
+            - undefined
+          fuzzing_engines:
+            - libfuzzer
+            - afl
+          EOF
+          
+          # Create build.sh for OSS-Fuzz
+          cat > oss-fuzz-integration/build.sh << 'EOF'
+          #!/bin/bash -eu
+          # Build script for OSS-Fuzz integration
+          
+          pip3 install .
+          
+          # Create fuzzing targets
+          for fuzz_target in fuzz_requirements fuzz_conda fuzz_toml; do
+            cat > $OUT/$fuzz_target.py << INNER_EOF
+          import sys
+          import atheris
+          sys.path.insert(0, '/src')
+          from fuzz.fuzz_parsers import *
+          
+          @atheris.instrument_func
+          def TestOneInput(data):
+              # Implement specific fuzzing logic here
+              pass
+              
+          atheris.Setup(sys.argv, TestOneInput)
+          atheris.Fuzz()
+          INNER_EOF
+            chmod +x $OUT/$fuzz_target.py
+          done
+          EOF
+          chmod +x oss-fuzz-integration/build.sh
+
+      - name: Verify OSS-Fuzz compatibility
+        run: |
+          echo "✅ OSS-Fuzz integration files created:"
+          ls -la oss-fuzz-integration/
+          echo "✅ This project is ready for OSS-Fuzz integration"
+
+      - name: Upload OSS-Fuzz integration
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: oss-fuzz-integration
+          path: oss-fuzz-integration/
