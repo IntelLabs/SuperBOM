@@ -19,6 +19,8 @@ permissions:
 jobs:
   build-and-sign-release:
     runs-on: ubuntu-latest
+    outputs:
+      digests: ${{ steps.hash.outputs.digests }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,6 +46,25 @@ jobs:
       - name: Build package
         run: |
           uv build
+
+      - name: Generate file hashes for SLSA
+        shell: bash
+        id: hash
+        run: |
+          set -euo pipefail
+          
+          # Generate SHA256 digests for all built artifacts
+          (
+            cd dist/
+            for file in *; do
+              if [ -f "$file" ]; then
+                echo "$file:$(sha256sum "$file" | head -c 64)"
+              fi
+            done
+          ) > checksums
+          
+          # Create base64-encoded subjects for SLSA
+          echo "digests=$(cat checksums | base64 -w0)" >> "$GITHUB_OUTPUT"
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
@@ -120,12 +141,6 @@ jobs:
                 "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.create_release.outputs.id }}/assets?name=${filename}.bundle"
             fi
           done
-
-      - name: Generate SLSA provenance
-        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
-        with:
-          base64-subjects: |
-            ${{ hashFiles('dist/*') }}
 
       - name: Update release with security information
         run: |
@@ -208,3 +223,15 @@ jobs:
               echo "Signed $file"
             fi
           done
+
+  # Generate SLSA provenance as a separate job
+  provenance:
+    needs: [build-and-sign-release]
+    permissions:
+      actions: read   # To read the workflow path
+      id-token: write # To sign the provenance
+      contents: write # To add assets to a release
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: "${{ needs.build-and-sign-release.outputs.digests }}"
+      upload-assets: true # upload to a new release
