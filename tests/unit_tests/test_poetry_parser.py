@@ -1,7 +1,6 @@
 import unittest
 from pathlib import Path
-from superbom.utils.parsers import parse_poetry_toml
-from poetry.core.packages.dependency import Dependency
+from superbom.utils.parsers import parse_poetry_toml, Dependency
 
 class TestParsePoetryToml(unittest.TestCase):
 
@@ -51,19 +50,17 @@ class TestParsePoetryToml(unittest.TestCase):
 
     def test_parse_poetry_toml_valid(self):
         packages = parse_poetry_toml(self.valid_toml_path)
-        self.assertEqual(len(packages), 3)
+        self.assertEqual(len(packages), 2)  # Excluding python dependency
         self.assertIsInstance(packages[0], Dependency)
-        self.assertEqual(packages[0].name, "python")
-        self.assertEqual(packages[1].name, "requests")
-        self.assertEqual(packages[2].name, "pytest")
+        self.assertEqual(packages[0].name, "requests")
+        self.assertEqual(packages[1].name, "pytest")
 
     def test_parse_poetry_toml_invalid(self):
         packages = parse_poetry_toml(self.invalid_toml_path)
-        self.assertEqual(len(packages), 3)
+        self.assertEqual(len(packages), 2)  # Excluding python dependency
         self.assertIsInstance(packages[0], Dependency)
-        self.assertEqual(packages[0].name, "python")
-        self.assertEqual(packages[1].name, "requests")
-        self.assertEqual(packages[2].name, "pytest")
+        self.assertEqual(packages[0].name, "requests")
+        self.assertEqual(packages[1].name, "pytest")
 
 if __name__ == "__main__":
     unittest.main()
