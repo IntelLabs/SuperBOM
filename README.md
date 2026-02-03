@@ -1,4 +1,10 @@
 # SuperBOM
+![GitHub License](https://img.shields.io/github/license/IntelLabs/SuperBOM)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/IntelLabs/SuperBOM/badge)](https://scorecard.dev/viewer/?uri=github.com/IntelLabs/SuperBOM)
+[![CI](https://github.com/IntelLabs/SuperBOM/actions/workflows/main.yml/badge.svg)](https://github.com/IntelLabs/SuperBOM/actions/workflows/main.yml)
+![Dependabot](https://img.shields.io/badge/dependabot-enabled-brightgreen)
+
+![Python](https://img.shields.io/badge/python-%3E%203.11-blue)
 
 ## Features
 - Automatically parses Python environment files to discover dependencies.
