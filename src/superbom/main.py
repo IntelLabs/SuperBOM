@@ -202,12 +202,8 @@ def generatebom(args: argparse.ArgumentParser):
 
 class RequiredOutputFormat(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        if values not in ["table", "csv", "excel", "json"]:
-            raise ValueError("Output format must be one of: table, csv, excel, json")
-
-        if values == "excel" and not namespace.output:
-            raise ValueError("Output (-o/--output) must be specified when format is 'Excel'")
         setattr(namespace, self.dest, values)
+        # Validation will be done after all arguments are parsed
 
 
 def main(argv=None):
@@ -219,7 +215,7 @@ def main(argv=None):
     parser.add_argument(
         "path",
         type=str,
-        help="Path to environment file or directory to search.  (if directory, will search for .yml, .txt, .toml files)",
+        help="Path to environment file or directory to search. (if directory, will search for .yml, .yaml, .txt, .toml files)",
     )
 
     # Output commands
@@ -230,6 +226,7 @@ def main(argv=None):
         "--format",
         default="table",
         type=str,
+        choices=["table", "csv", "excel", "json"],
         action=RequiredOutputFormat,
         help="Output format (table, csv, excel, json) Default: table",
     )
@@ -256,6 +253,11 @@ def main(argv=None):
     )
 
     args = parser.parse_args(argv)
+    
+    # Validate excel format requires output file
+    if args.format == "excel" and args.output == sys.stdout:
+        parser.error("Output (-o/--output) must be specified when format is 'excel'")
+    
     generatebom(args)
 
 

@@ -3,12 +3,35 @@
 
 import re
 from pathlib import Path
+from dataclasses import dataclass
+from typing import Optional, Set, Union
 
 import tomli
 import yaml
 from packaging.requirements import Requirement
-from poetry.core.factory import Factory
-from poetry.core.pyproject.toml import PyProjectTOML
+from packaging.specifiers import SpecifierSet
+from packaging.markers import Marker
+
+
+@dataclass
+class Dependency:
+    """A simple dependency class to replace Poetry's Factory.create_dependency"""
+    name: str
+    constraint: Union[str, SpecifierSet]
+    extras: Optional[Set[str]] = None
+    marker: Optional[Marker] = None
+    
+    def __post_init__(self):
+        if isinstance(self.constraint, str):
+            self.constraint = SpecifierSet(self.constraint) if self.constraint else SpecifierSet()
+        if self.extras is None:
+            self.extras = set()
+    
+    @classmethod
+    def create_dependency(cls, name: str, constraint: Union[str, SpecifierSet] = "", 
+                         extras: Optional[Set[str]] = None, marker: Optional[Marker] = None):
+        """Factory method to create a dependency, similar to Poetry's Factory.create_dependency"""
+        return cls(name=name, constraint=constraint, extras=extras or set(), marker=marker)
 
 
 def parse_git_requirement(line):
@@ -56,8 +79,8 @@ def parse_requirements(file_path):  # pragma: no cover
                 package = parse_git_requirement(line)
                 package = parse_requirement(package)
                 if package is not None:
-                    package = Factory.create_dependency(
-                        package["name"], package["specifier"], package["extras"], package["marker"]
+                    package = Dependency.create_dependency(
+                        package["name"], str(package["specifier"]), package["extras"], package["marker"]
                     )
                     packages.append(package)
                 continue
@@ -82,8 +105,8 @@ def parse_requirements(file_path):  # pragma: no cover
                 package = parse_requirement(line.strip("\n"))
 
                 if package is not None:
-                    package = Factory.create_dependency(
-                        package["name"], package["specifier"], package["extras"], package["marker"]
+                    package = Dependency.create_dependency(
+                        package["name"], str(package["specifier"]), package["extras"], package["marker"]
                     )
                     packages.append(package)
 
@@ -118,8 +141,8 @@ def parse_conda_env(file_path):
     for i, package in enumerate(pip_packages):
         if isinstance(package, str):
             tmp = parse_requirement(package.strip())
-            pip_packages[i] = Factory.create_dependency(
-                tmp["name"], tmp["specifier"], tmp["extras"], tmp["marker"]
+            pip_packages[i] = Dependency.create_dependency(
+                tmp["name"], str(tmp["specifier"]), tmp["extras"], tmp["marker"]
             )
     return conda_channels, conda_packages, pip_packages
 
@@ -149,8 +172,8 @@ def extract_toml_dependencies(file_path):  # pragma: no cover
                 continue
 
             packages.append(
-                Factory.create_dependency(
-                    tmp["name"], tmp["specifier"], tmp["extras"], tmp["marker"]
+                Dependency.create_dependency(
+                    tmp["name"], str(tmp["specifier"]), tmp["extras"], tmp["marker"]
                 )
             )
 
@@ -158,26 +181,45 @@ def extract_toml_dependencies(file_path):  # pragma: no cover
 
 
 def parse_poetry_toml(file_path):
+    """Parse a pyproject.toml file, supporting both Poetry and modern PEP 621 format"""
     packages = []
     file_path = Path(file_path)
-    project = PyProjectTOML(file_path)
-
-    if project.is_poetry_project():
-        deps = (
-            project.poetry_config["dependencies"]
-            if "dependencies" in project.poetry_config
-            else {}
-        )
-
-        dev_deps = (
-            project.poetry_config["dev-dependencies"]
-            if "dev-dependencies" in project.poetry_config
-            else {}
-        )
-        deps.update(dev_deps)
-
-        for dep, constraint in deps.items():
-            tmp = Factory.create_dependency(dep, constraint)
-            packages.append(tmp)
-
+    
+    with open(file_path, "rb") as f:
+        data = tomli.load(f)
+    
+    # Try Poetry format first (legacy)
+    if "tool" in data and "poetry" in data["tool"]:
+        poetry_config = data["tool"]["poetry"]
+        
+        deps = poetry_config.get("dependencies", {})
+        dev_deps = poetry_config.get("dev-dependencies", {})
+        
+        # Also check for group dependencies
+        if "group" in poetry_config:
+            for group_name, group_config in poetry_config["group"].items():
+                if "dependencies" in group_config:
+                    dev_deps.update(group_config["dependencies"])
+        
+        all_deps = {**deps, **dev_deps}
+        
+        for dep_name, constraint in all_deps.items():
+            if dep_name == "python":  # Skip Python version constraint
+                continue
+            
+            # Handle different constraint formats
+            if isinstance(constraint, str):
+                constraint_str = constraint
+            elif isinstance(constraint, dict):
+                # Handle complex constraints like {version = "^1.0", extras = ["dev"]}
+                constraint_str = constraint.get("version", "")
+            else:
+                constraint_str = str(constraint)
+            
+            # Convert Poetry caret notation to standard format
+            if constraint_str.startswith("^"):
+                constraint_str = ">=" + constraint_str[1:]
+            
+            packages.append(Dependency.create_dependency(dep_name, constraint_str))
+    
     return packages
