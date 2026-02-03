@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies including fuzzing tools
         run: |
-          uv sync --group fuzzing
+          uv sync --extra fuzzing
 
       - name: Run random fuzzing
         run: |
@@ -75,7 +75,7 @@ jobs:
 
       - name: Install dependencies including hypothesis
         run: |
-          uv sync --group fuzzing
+          uv sync --extra fuzzing
 
       - name: Run Hypothesis property-based fuzzing
         run: |
@@ -115,9 +115,9 @@ jobs:
 
       - name: Install dependencies and try Atheris
         run: |
-          uv sync --group fuzzing
+          uv sync --extra fuzzing
           # Try to install Atheris on Linux
-          uv add --group fuzzing atheris || echo "⚠️ Atheris installation failed, skipping"
+          uv add --optional fuzzing atheris || echo "⚠️ Atheris installation failed, skipping"
 
       - name: Run Atheris fuzzing if available
         run: |

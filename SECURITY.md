@@ -17,7 +17,7 @@ This project implements comprehensive fuzzing to proactively discover security v
 ### Running Fuzzing Locally
 ```bash
 # Install fuzzing dependencies
-uv sync --group fuzzing
+uv sync --extra fuzzing
 
 # Run interactive fuzzing
 ./run_fuzzing.sh

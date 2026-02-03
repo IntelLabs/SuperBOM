@@ -21,7 +21,7 @@ Uses Hypothesis for structured property-based testing:
 ### Prerequisites
 ```bash
 # Install fuzzing dependencies
-uv add --group dev atheris hypothesis tomli-w
+uv add --optional fuzzing atheris hypothesis tomli-w
 ```
 
 ### Run Atheris Fuzzing
