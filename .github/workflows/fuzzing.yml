@@ -79,7 +79,7 @@ jobs:
 
       - name: Run Hypothesis property-based fuzzing
         run: |
-          uv run python -m pytest fuzz/fuzz_hypothesis.py -v --tb=short
+          uv run python fuzz/fuzz_hypothesis.py
 
       - name: Upload hypothesis results
         if: always()
