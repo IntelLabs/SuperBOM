@@ -64,6 +64,17 @@ superbom environment.yml -p win-64
 - uv (Python package manager)  
 - git  
 
+### Quick Install
+For quick installation as a tool via `uv`:
+```bash
+uv tool install git+https://github.com/IntelLabs/SuperBOM
+
+# with a specific tag/release
+uv tool install git+https://github.com/IntelLabs/SuperBOM@v0.3.0
+```
+
+Or see below for development setup.
+
 ### Project Setup
 ```bash
 # Navigate to project directory
