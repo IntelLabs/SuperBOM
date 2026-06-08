@@ -16,8 +16,6 @@ on:
 
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch: 
 
 # Declare default permissions as read only.
